@@ -1,0 +1,39 @@
+CREATE TABLE [dbo].[Clients] (
+    [ClientId]         INT             NOT NULL,
+    [ClientName]       NVARCHAR (40)   NOT NULL,
+    [Address]          NVARCHAR (150)  NOT NULL,
+    [Picture]          VARBINARY (MAX) NOT NULL,
+    [LoanAmount]       MONEY           NOT NULL,
+    [LoanDate]         DATE            NOT NULL,
+    [TotalAmountToPay] AS              ([LoanAmount] * (1.075)),
+    [LoanEndDate]      AS              (dateadd(year, (1), [LoanDate])),
+    [MinPayPerMonth]   AS              ([LoanAmount] * (1.075)) / 12,
+    PRIMARY KEY CLUSTERED ([ClientId] ASC)
+);
+
+
+GO
+CREATE TABLE [dbo].Payments
+(
+	[PaymentId] INT NOT NULL PRIMARY KEY,
+	ClientId INT NOT NULL REFERENCES Clients (ClientId),
+	PaymentDate DATE NOT NULL,
+	PayAmount MONEY NOT NULL
+)
+GO
+CREATE VIEW [dbo].viewTotalPaid
+	AS 
+SELECT SUM(PayAmount) AS 'TotalPaid', c.ClientId
+FROM Payments AS c
+GROUP BY c.ClientId
+GO
+CREATE VIEW vTablePayments
+AS
+SELECT  p.PaymentId, p.ClientId,p.PaymentDate, p.PayAmount, v.TotalPaid FROM Payments p
+INNER JOIN viewTotalPaid v
+ON v.ClientId = v.ClientId
+GO
+
+INSERT INTO Clients(ClientId, ClientName, Address,Picture, LoanAmount, LoanDate)
+VALUES (@id, @name, @add,@pic, @amt, @ld)
+
